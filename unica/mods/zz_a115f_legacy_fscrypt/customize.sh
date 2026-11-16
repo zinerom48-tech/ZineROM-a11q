@@ -42,7 +42,7 @@ A115F_SHIM_DST="$WORK_DIR/system/$A115F_SHIM_REL"
 A115F_BUILD_ROOT="$TMP_DIR/a115f_legacy_fscrypt"
 A115F_OUT_ROOT="$A115F_BUILD_ROOT/out"
 
-for a115f_tool in bash clang xxd python3; do
+for a115f_tool in bash clang od python3; do
     if ! command -v "$a115f_tool" >/dev/null 2>&1; then
         LOGE "$A115F_FSCRYPT_TAG: required tool not found: $a115f_tool"
         return 1
@@ -70,6 +70,13 @@ if [ ! -f "$A115F_VOLD_RC" ]; then
     LOGE "$A115F_FSCRYPT_TAG: vold.rc not found: $A115F_VOLD_RC"
     return 1
 fi
+
+a115f_read_hex() {
+    # a115f_read_hex FILE OFFSET LENGTH
+    # od is part of coreutils and is present before the workflow's build
+    # dependency step; xxd is not guaranteed there.
+    od -An -v -tx1 -j "$2" -N "$3" "$1" | tr -d '[:space:]'
+}
 
 check_dynamic_layout() {
     local WRAPPER="$1"
@@ -120,9 +127,9 @@ check_elf64_aarch64() {
     local FILE="$1"
     local MAGIC CLASS MACHINE
 
-    MAGIC="$(xxd -p -l 4 "$FILE")"
-    CLASS="$(xxd -p -s 4 -l 1 "$FILE")"
-    MACHINE="$(xxd -p -s 18 -l 2 "$FILE")"
+    MAGIC="$(a115f_read_hex "$FILE" 0 4)"
+    CLASS="$(a115f_read_hex "$FILE" 4 1)"
+    MACHINE="$(a115f_read_hex "$FILE" 18 2)"
 
     if [ "$MAGIC" != "7f454c46" ] || [ "$CLASS" != "02" ] || [ "$MACHINE" != "b700" ]; then
         LOGE "$A115F_FSCRYPT_TAG: unexpected ELF layout: $FILE (magic=$MAGIC class=$CLASS machine=$MACHINE)"
@@ -136,7 +143,7 @@ check_elf_type() {
     local EXPECTED_TYPE="$2"
     local TYPE
 
-    TYPE="$(xxd -p -s 16 -l 2 "$FILE")"
+    TYPE="$(a115f_read_hex "$FILE" 16 2)"
     if [ "$TYPE" != "$EXPECTED_TYPE" ]; then
         LOGE "$A115F_FSCRYPT_TAG: unexpected ELF type: $FILE (type=$TYPE expected=$EXPECTED_TYPE)"
         return 1
