@@ -1,0 +1,6 @@
+id=a115f_legacy_fscrypt
+name=A115F legacy fscrypt bridge
+version=1.0.0
+versionCode=1
+author=zinerom48-tech
+description=Creates PID 1 keyrings before SELinux policy load and bridges donor vold fscrypt ioctls to the A11 4.9 legacy keyring path. Static build only; not device-tested.
