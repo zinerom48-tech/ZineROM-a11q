@@ -15,7 +15,9 @@ Covered:
   * exactly-once fs_config/file_context entries for all three paths;
   * exactly one LD_PRELOAD line in vold.rc;
   * a second run is idempotent;
-  * a non-symlink ueventd and a foreign init.real abort before modifying init.
+  * a non-symlink ueventd and a foreign init.real abort before modifying init;
+  * the real ``apply_modules.sh`` driver invokes the mod and honours
+    ``SKIPUNZIP=1`` (no automatic system-tree copy).
 
 The fixture donor init is synthetic (a valid ELF64/AArch64 header plus a
 marker) rather than a 3.6 MB vendor blob.  The real donor init/vold.rc were
@@ -211,6 +213,49 @@ class LegacyFscryptModInstallTest(unittest.TestCase):
         second = self.run_mod(work, tmp)
         self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
         self.assert_installed(work)
+
+    def test_apply_modules_driver_runs_the_mod_without_copying_a_tree(self) -> None:
+        work, tmp = self.make_work("apply_modules")
+        mods = self.base / "apply_modules" / "mods"
+        mods.mkdir(parents=True, exist_ok=True)
+        mod = mods / "zz_a115f_legacy_fscrypt"
+        shutil.copytree(ROOT / "unica" / "mods" / "zz_a115f_legacy_fscrypt", mod)
+        sentinel = mod / "system" / "sentinel.txt"
+        sentinel.parent.mkdir(parents=True, exist_ok=True)
+        sentinel.write_text("must not be copied\n", encoding="utf-8", newline="")
+
+        env = os.environ.copy()
+        env.update(
+            {
+                "CC": to_bash_path(TARGET_CC),
+                "HOST_CC": to_bash_path(HOST_CC),
+                "SRC_DIR": to_bash_path(ROOT),
+                "WORK_DIR": to_bash_path(work),
+                "TMP_DIR": to_bash_path(tmp),
+                "TARGET_CODENAME": "a115f",
+                "TARGET_SINGLE_SYSTEM_IMAGE": "qssi",
+                "TARGET_HAS_SYSTEM_EXT": "false",
+            }
+        )
+        result = subprocess.run(
+            [
+                BASH,
+                to_bash_path(ROOT / "scripts" / "internal" / "apply_modules.sh"),
+                to_bash_path(mods),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+        )
+        output = result.stdout + result.stderr
+        self.assertEqual(result.returncode, 0, output)
+        self.assertIn("A115F legacy fscrypt bridge", output)
+        self.assert_installed(work)
+        self.assertFalse(
+            (work / "system" / "sentinel.txt").exists(),
+            "SKIPUNZIP=1 did not suppress the automatic system-tree copy",
+        )
 
     def test_non_symlink_ueventd_aborts_before_moving_init(self) -> None:
         work, tmp = self.make_work("bad_ueventd")
