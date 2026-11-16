@@ -52,9 +52,9 @@ static long a115f_find_fscrypt_keyring(const struct a115f_key_ops *ops) {
     if (ops == NULL || ops->keyctl == NULL) {
         return -A115F_EINVAL;
     }
-    return ops->keyctl(A115F_KEYCTL_SEARCH, (unsigned long)(long)A115F_KEY_SPEC_SESSION_KEYRING,
-                       (unsigned long)(uintptr_t) "keyring",
-                       (unsigned long)(uintptr_t) A115F_FSCRYPT_KEYRING_NAME, 0);
+    return ops->keyctl(A115F_KEYCTL_SEARCH, (uintptr_t)(long)A115F_KEY_SPEC_SESSION_KEYRING,
+                       (uintptr_t) "keyring",
+                       (uintptr_t) A115F_FSCRYPT_KEYRING_NAME, 0);
 }
 
 int a115f_legacy_install(const struct a115f_key_ops *ops,
@@ -119,17 +119,17 @@ int a115f_legacy_evict(const struct a115f_key_ops *ops,
         long unlink_result;
 
         a115f_legacy_key_name(prefixes[i], descriptor, name);
-        key_id = ops->keyctl(A115F_KEYCTL_SEARCH, (unsigned long)ring,
-                             (unsigned long)(uintptr_t) "logon",
-                             (unsigned long)(uintptr_t)name, 0);
+        key_id = ops->keyctl(A115F_KEYCTL_SEARCH, (uintptr_t)ring,
+                             (uintptr_t) "logon",
+                             (uintptr_t)name, 0);
         if (key_id < 0) {
             if (result == 0) {
                 result = (int)key_id;
             }
             continue;
         }
-        unlink_result = ops->keyctl(A115F_KEYCTL_UNLINK, (unsigned long)key_id,
-                                    (unsigned long)ring, 0, 0);
+        unlink_result = ops->keyctl(A115F_KEYCTL_UNLINK, (uintptr_t)key_id,
+                                    (uintptr_t)ring, 0, 0);
         if (unlink_result < 0 && result == 0) {
             result = (int)unlink_result;
         }
@@ -164,9 +164,9 @@ int a115f_legacy_status(const struct a115f_key_ops *ops,
         long key_id;
 
         a115f_legacy_key_name(prefixes[i], descriptor, name);
-        key_id = ops->keyctl(A115F_KEYCTL_SEARCH, (unsigned long)ring,
-                             (unsigned long)(uintptr_t) "logon",
-                             (unsigned long)(uintptr_t)name, 0);
+        key_id = ops->keyctl(A115F_KEYCTL_SEARCH, (uintptr_t)ring,
+                             (uintptr_t) "logon",
+                             (uintptr_t)name, 0);
         if (key_id >= 0) {
             found = 1;
         }

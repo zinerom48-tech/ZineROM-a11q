@@ -113,9 +113,13 @@ struct a115f_fscrypt_get_key_status_arg {
 /*
  * Syscall ABI used by the pure helpers. The callbacks return the raw
  * Linux syscall convention (>= 0 or -errno), not libc errno semantics.
+ *
+ * Arguments are uintptr_t rather than unsigned long: on aarch64/Linux the
+ * two are identical, but uintptr_t stays pointer-sized on LLP64 hosts so
+ * the unit tests can pass real string pointers through the fake callbacks.
  */
-typedef long (*a115f_keyctl_fn)(int option, unsigned long arg2, unsigned long arg3,
-                                unsigned long arg4, unsigned long arg5);
+typedef long (*a115f_keyctl_fn)(int option, uintptr_t arg2, uintptr_t arg3,
+                                uintptr_t arg4, uintptr_t arg5);
 typedef long (*a115f_add_key_fn)(const char *type, const char *description, const void *payload,
                                  size_t plen, int32_t keyring);
 

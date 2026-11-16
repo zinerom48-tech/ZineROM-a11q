@@ -53,8 +53,8 @@ static int fake_find_name(const char *name) {
     return -1;
 }
 
-static long fake_keyctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4,
-                        unsigned long arg5) {
+static long fake_keyctl(int option, uintptr_t arg2, uintptr_t arg3, uintptr_t arg4,
+                        uintptr_t arg5) {
     (void)arg5;
     if (option == A115F_KEYCTL_GET_KEYRING_ID) {
         return 7;
